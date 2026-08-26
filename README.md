@@ -4,7 +4,7 @@ Catálogo de produtos com integração de pagamento via Pix.
 
 ## 🌐 Acesse
 
-https://andermucha.github.io/AppCatalogoPix
+https://andermuchael.github.io/AppCatalogoPix
 
 ## 📱 Funcionalidades
 
