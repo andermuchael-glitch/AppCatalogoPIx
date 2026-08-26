@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Header -->
     <header>
         <div class="container">
             <h1>🛍️ Catálogo Pix</h1>
@@ -18,62 +17,38 @@
             </nav>
         </div>
     </header>
-
-    <!-- Conteúdo Principal -->
     <main class="container">
-        <!-- Seção de Produtos -->
         <section id="section-produtos">
             <div class="section-header">
                 <h2>📦 Produtos</h2>
                 <button onclick="abrirFormProduto()" class="btn-primary">+ Novo Produto</button>
             </div>
-            <div id="lista-produtos" class="grid-produtos">
-                <!-- Produtos serão carregados aqui -->
-            </div>
+            <div id="lista-produtos" class="grid-produtos"></div>
         </section>
-
-        <!-- Seção de Clientes -->
         <section id="section-clientes" style="display:none;">
             <div class="section-header">
                 <h2>👤 Clientes</h2>
                 <button onclick="abrirFormCliente()" class="btn-primary">+ Novo Cliente</button>
             </div>
-            <div id="lista-clientes" class="grid-clientes">
-                <!-- Clientes serão carregados aqui -->
-            </div>
+            <div id="lista-clientes" class="grid-clientes"></div>
         </section>
-
-        <!-- Seção de Pedidos -->
         <section id="section-pedidos" style="display:none;">
-            <div class="section-header">
-                <h2>📋 Pedidos</h2>
-            </div>
-            <div id="lista-pedidos" class="grid-pedidos">
-                <!-- Pedidos serão carregados aqui -->
-            </div>
+            <div class="section-header"><h2>📋 Pedidos</h2></div>
+            <div id="lista-pedidos" class="grid-pedidos"></div>
         </section>
     </main>
-
-    <!-- Modal para Formulários -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="fecharModal()">&times;</span>
-            <div id="modal-body">
-                <!-- Conteúdo do modal será carregado aqui -->
-            </div>
+            <div id="modal-body"></div>
         </div>
     </div>
-
-    <!-- Modal para Pagamento Pix -->
     <div id="modal-pix" class="modal">
         <div class="modal-content">
             <span class="close" onclick="fecharModalPix()">&times;</span>
-            <div id="modal-pix-body">
-                <!-- Conteúdo do Pix será carregado aqui -->
-            </div>
+            <div id="modal-pix-body"></div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
