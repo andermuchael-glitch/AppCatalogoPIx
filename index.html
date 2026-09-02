@@ -3,51 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Pix - Produtos</title>
+    <meta name="theme-color" content="#16a34a">
+    <title>Catálogo Pix - Loja</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>🛍️ Catálogo Pix</h1>
-            <nav>
-                <button onclick="mostrarProdutos()" class="active">Produtos</button>
-                <button onclick="mostrarClientes()">Clientes</button>
-                <button onclick="mostrarPedidos()">Pedidos</button>
-            </nav>
+        <div class="container header-inner">
+            <div>
+                <h1>🛍️ Catálogo Pix</h1>
+                <p class="header-subtitle">Produtos, pedidos e pagamento Pix</p>
+            </div>
+            <div class="header-actions">
+                <nav>
+                    <button onclick="mostrarProdutos()" class="active">Produtos</button>
+                    <button onclick="mostrarClientes()">Clientes</button>
+                    <button onclick="mostrarPedidos()">Pedidos</button>
+                </nav>
+                <button onclick="abrirCarrinho()" class="cart-button">🛒 Carrinho <span id="cart-count">0</span></button>
+            </div>
         </div>
     </header>
     <main class="container">
         <section id="section-produtos">
             <div class="section-header">
-                <h2>📦 Produtos</h2>
+                <div><h2>📦 Produtos</h2><p class="section-description">Escolha seus produtos e adicione ao carrinho.</p></div>
                 <button onclick="abrirFormProduto()" class="btn-primary">+ Novo Produto</button>
             </div>
             <div id="lista-produtos" class="grid-produtos"></div>
         </section>
         <section id="section-clientes" style="display:none;">
             <div class="section-header">
-                <h2>👤 Clientes</h2>
+                <div><h2>👤 Clientes</h2><p class="section-description">Clientes cadastrados para seus pedidos.</p></div>
                 <button onclick="abrirFormCliente()" class="btn-primary">+ Novo Cliente</button>
             </div>
             <div id="lista-clientes" class="grid-clientes"></div>
         </section>
         <section id="section-pedidos" style="display:none;">
-            <div class="section-header"><h2>📋 Pedidos</h2></div>
+            <div class="section-header"><div><h2>📋 Pedidos</h2><p class="section-description">Acompanhe os pedidos realizados.</p></div></div>
             <div id="lista-pedidos" class="grid-pedidos"></div>
         </section>
     </main>
+
     <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal()">&times;</span>
-            <div id="modal-body"></div>
-        </div>
+        <div class="modal-content"><span class="close" onclick="fecharModal()">&times;</span><div id="modal-body"></div></div>
     </div>
     <div id="modal-pix" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModalPix()">&times;</span>
-            <div id="modal-pix-body"></div>
-        </div>
+        <div class="modal-content"><span class="close" onclick="fecharModalPix()">&times;</span><div id="modal-pix-body"></div></div>
     </div>
     <script src="script.js"></script>
 </body>
