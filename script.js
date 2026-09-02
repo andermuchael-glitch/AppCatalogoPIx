@@ -1,129 +1,30 @@
 // Configuração da API
 const API_URL = (window.APP_API_URL || 'https://app-catalogo-pix.vercel.app/api').replace(/\/$/, '');
-
-let produtos = [];
-let clientes = [];
-let pedidos = [];
-let carrinho = [];
-
-document.addEventListener('DOMContentLoaded', carregarProdutos);
-
-function mostrarProdutos() {
-    document.getElementById('section-produtos').style.display = 'block';
-    document.getElementById('section-clientes').style.display = 'none';
-    document.getElementById('section-pedidos').style.display = 'none';
-    atualizarNav('produtos');
-    carregarProdutos();
-}
-function mostrarClientes() {
-    document.getElementById('section-produtos').style.display = 'none';
-    document.getElementById('section-clientes').style.display = 'block';
-    document.getElementById('section-pedidos').style.display = 'none';
-    atualizarNav('clientes');
-    carregarClientes();
-}
-function mostrarPedidos() {
-    document.getElementById('section-produtos').style.display = 'none';
-    document.getElementById('section-clientes').style.display = 'none';
-    document.getElementById('section-pedidos').style.display = 'block';
-    atualizarNav('pedidos');
-    carregarPedidos();
-}
-function atualizarNav(secao) {
-    document.querySelectorAll('header nav button').forEach(btn => btn.classList.remove('active'));
-    const mapa = { produtos: 0, clientes: 1, pedidos: 2 };
-    document.querySelectorAll('header nav button')[mapa[secao]]?.classList.add('active');
-}
-
-async function apiFetch(url, options = {}) {
-    const response = await fetch(url, options);
-    const text = await response.text();
-    let data = null;
-    try { data = text ? JSON.parse(text) : null; } catch { data = { error: text || 'Resposta inválida do servidor' }; }
-    if (!response.ok) throw new Error(data?.error || `Erro HTTP ${response.status}`);
-    return data;
-}
-
-async function carregarProdutos() {
-    const container = document.getElementById('lista-produtos');
-    container.innerHTML = '<div class="loading">Carregando produtos...</div>';
-    try { produtos = await apiFetch(`${API_URL}/produtos`); renderizarProdutos(); }
-    catch (error) { console.error(error); container.innerHTML = `<div style="text-align:center;padding:40px;color:#666"><p>⚠️ Erro ao carregar produtos</p><p style="font-size:12px">${escapeHtml(error.message)}</p><button onclick="carregarProdutos()" class="btn-primary">Tentar novamente</button></div>`; }
-}
-function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-function produtoId(prod) { return String(prod.id || prod._id || ''); }
-function renderizarProdutos() {
-    const container = document.getElementById('lista-produtos');
-    if (!produtos.length) { container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;grid-column:1/-1"><p>📦 Nenhum produto cadastrado</p><button onclick="abrirFormProduto()" class="btn-primary">Adicionar primeiro produto</button></div>'; return; }
-    container.innerHTML = produtos.map(prod => {
-        const preco = Number(prod.preco ?? prod.price ?? 0);
-        const id = produtoId(prod);
-        return `<div class="card-produto"><h3>${escapeHtml(prod.nome || prod.name || 'Produto')}</h3><div class="preco">R$ ${preco.toFixed(2).replace('.', ',')}</div><div class="descricao">${escapeHtml(prod.descricao || prod.description || 'Sem descrição')}</div><div class="actions"><button onclick="comprarProduto('${escapeHtml(id)}')" class="btn-secondary">🛒 Comprar</button><button onclick="excluirProduto('${escapeHtml(id)}')" class="btn-danger">🗑️</button></div></div>`;
-    }).join('');
-}
-function abrirFormProduto() {
-    document.getElementById('modal-body').innerHTML = `<h2 style="margin-bottom:20px">Novo Produto</h2><form id="form-produto" onsubmit="salvarProduto(event)"><div class="form-group"><label>Nome do Produto</label><input type="text" id="produto-nome" required></div><div class="form-group"><label>Descrição</label><textarea id="produto-descricao" rows="3"></textarea></div><div class="form-group"><label>Preço (R$)</label><input type="number" id="produto-preco" step="0.01" min="0" required></div><div class="form-group"><label>Categoria</label><select id="produto-categoria"><option>Eletrônicos</option><option>Roupas</option><option>Casa</option><option>Outros</option></select></div><button type="submit" class="btn-success">Salvar Produto</button></form>`;
-    document.getElementById('modal').style.display = 'block';
-}
-async function salvarProduto(event) {
-    event.preventDefault();
-    try {
-        await apiFetch(`${API_URL}/produtos`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nome:document.getElementById('produto-nome').value.trim(), descricao:document.getElementById('produto-descricao').value.trim(), preco:Number(document.getElementById('produto-preco').value), categoria:document.getElementById('produto-categoria').value }) });
-        fecharModal(); await carregarProdutos(); alert('✅ Produto cadastrado com sucesso!');
-    } catch(error) { alert(`❌ ${error.message}`); }
-}
-async function excluirProduto(id) {
-    if (!id || !confirm('Tem certeza que deseja excluir este produto?')) return;
-    try { await apiFetch(`${API_URL}/produtos?id=${encodeURIComponent(id)}`, { method:'DELETE' }); await carregarProdutos(); alert('✅ Produto excluído!'); }
-    catch(error) { alert(`❌ ${error.message}`); }
-}
-function comprarProduto(id) {
-    const produto = produtos.find(p => produtoId(p) === String(id));
-    if (!produto) return;
-    carrinho.push(produto);
-    alert(`🛒 ${produto.nome || produto.name} adicionado ao carrinho!`);
-}
-
-async function carregarClientes() {
-    const container = document.getElementById('lista-clientes'); container.innerHTML = '<div class="loading">Carregando clientes...</div>';
-    try { clientes = await apiFetch(`${API_URL}/clientes`); renderizarClientes(); }
-    catch(error) { console.error(error); container.innerHTML = `<div style="text-align:center;padding:40px;color:#666"><p>⚠️ Erro ao carregar clientes</p><p>${escapeHtml(error.message)}</p><button onclick="carregarClientes()" class="btn-primary">Tentar novamente</button></div>`; }
-}
-function renderizarClientes() {
-    const container = document.getElementById('lista-clientes');
-    if (!clientes.length) { container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;grid-column:1/-1"><p>👤 Nenhum cliente cadastrado</p><button onclick="abrirFormCliente()" class="btn-primary">Cadastrar primeiro cliente</button></div>'; return; }
-    container.innerHTML = clientes.map(cli => `<div class="card-cliente"><h3>${escapeHtml(cli.nome || cli.name || 'Cliente')}</h3><div class="email">📧 ${escapeHtml(cli.email || 'Sem email')}</div><div>📱 ${escapeHtml(cli.telefone || 'Sem telefone')}</div><div class="cpf">🆔 ${escapeHtml(cli.cpf || 'Sem CPF')}</div><div class="pix-key">💳 Chave Pix: ${escapeHtml(cli.pixKey || 'N/A')}</div></div>`).join('');
-}
-function abrirFormCliente() {
-    document.getElementById('modal-body').innerHTML = `<h2 style="margin-bottom:20px">Novo Cliente</h2><form onsubmit="salvarCliente(event)"><div class="form-group"><label>Nome Completo</label><input type="text" id="cliente-nome" required></div><div class="form-group"><label>E-mail</label><input type="email" id="cliente-email" required></div><div class="form-group"><label>Telefone</label><input type="text" id="cliente-telefone"></div><div class="form-group"><label>CPF</label><input type="text" id="cliente-cpf" required maxlength="11" inputmode="numeric"></div><button type="submit" class="btn-success">Cadastrar Cliente</button></form>`;
-    document.getElementById('modal').style.display = 'block';
-}
-async function salvarCliente(event) {
-    event.preventDefault();
-    try {
-        await apiFetch(`${API_URL}/clientes`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nome:document.getElementById('cliente-nome').value.trim(),email:document.getElementById('cliente-email').value.trim(),telefone:document.getElementById('cliente-telefone').value.trim(),cpf:document.getElementById('cliente-cpf').value.replace(/\D/g,'')}) });
-        fecharModal(); await carregarClientes(); alert('✅ Cliente cadastrado com sucesso!');
-    } catch(error) { alert(`❌ ${error.message}`); }
-}
-
-async function carregarPedidos() {
-    const container = document.getElementById('lista-pedidos'); container.innerHTML = '<div class="loading">Carregando pedidos...</div>';
-    try { pedidos = await apiFetch(`${API_URL}/pedidos`); renderizarPedidos(); }
-    catch(error) { console.error(error); container.innerHTML = `<div style="text-align:center;padding:40px;color:#666"><p>⚠️ Erro ao carregar pedidos</p><p>${escapeHtml(error.message)}</p><button onclick="carregarPedidos()" class="btn-primary">Tentar novamente</button></div>`; }
-}
-function renderizarPedidos() {
-    const container = document.getElementById('lista-pedidos');
-    if (!pedidos.length) { container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;grid-column:1/-1"><p>📋 Nenhum pedido realizado</p><button onclick="mostrarProdutos()" class="btn-primary">Comprar produtos</button></div>'; return; }
-    container.innerHTML = pedidos.map(ped => `<div class="card-cliente"><h3>Pedido #${escapeHtml(ped.id || ped._id)}</h3><div style="margin:10px 0"><strong>Total:</strong> R$ ${Number(ped.total || 0).toFixed(2).replace('.', ',')}</div><div style="margin:10px 0"><strong>Status:</strong> <span class="${ped.status === 'PENDING' ? 'status-pending' : 'status-paid'}">${ped.status === 'PENDING' ? '⏳ Aguardando pagamento' : '✅ Pago'}</span></div><div style="font-size:13px;color:#999;margin-top:10px">${ped.createdAt ? new Date(ped.createdAt).toLocaleString('pt-BR') : ''}</div></div>`).join('');
-}
-
-function fecharModal() { document.getElementById('modal').style.display = 'none'; }
-function fecharModalPix() { document.getElementById('modal-pix').style.display = 'none'; }
-window.onclick = function(event) { if (event.target === document.getElementById('modal')) fecharModal(); if (event.target === document.getElementById('modal-pix')) fecharModalPix(); };
-
-function gerarPagamentoPix(total) {
-    const modal = document.getElementById('modal-pix');
-    document.getElementById('modal-pix-body').innerHTML = `<h2>💳 Pagamento Pix</h2><div style="text-align:center;padding:20px"><p style="font-size:24px;font-weight:bold">R$ ${Number(total).toFixed(2).replace('.', ',')}</p><p>⚠️ O Pix ainda está em modo de teste. Nenhuma cobrança bancária real é gerada.</p><button onclick="fecharModalPix()" class="btn-secondary">Fechar</button></div>`;
-    modal.style.display = 'block';
-}
-function simularPagamento() { alert('ℹ️ Simulação de pagamento disponível apenas para testes.'); }
+let produtos = [], clientes = [], pedidos = [], carrinho = [];
+document.addEventListener('DOMContentLoaded', () => { carregarProdutos(); atualizarCarrinho(); });
+function mostrarProdutos(){mostrarSecao('produtos');carregarProdutos();} function mostrarClientes(){mostrarSecao('clientes');carregarClientes();} function mostrarPedidos(){mostrarSecao('pedidos');carregarPedidos();}
+function mostrarSecao(s){['produtos','clientes','pedidos'].forEach(x=>document.getElementById(`section-${x}`).style.display=x===s?'block':'none');atualizarNav(s);}
+function atualizarNav(s){document.querySelectorAll('header nav button').forEach(b=>b.classList.remove('active'));document.querySelectorAll('header nav button')[({produtos:0,clientes:1,pedidos:2}[s])]?.classList.add('active');}
+async function apiFetch(url,options={}){const r=await fetch(url,options),t=await r.text();let d=null;try{d=t?JSON.parse(t):null}catch{d={error:t||'Resposta inválida do servidor'}}if(!r.ok)throw new Error(d?.error||`Erro HTTP ${r.status}`);return d;}
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));} function produtoId(p){return String(p.id||p._id||'');} function dinheiro(v){return Number(v||0).toFixed(2).replace('.',',');}
+async function carregarProdutos(){const c=document.getElementById('lista-produtos');c.innerHTML='<div class="loading">Carregando produtos...</div>';try{produtos=await apiFetch(`${API_URL}/produtos`);renderizarProdutos()}catch(e){c.innerHTML=`<div class="empty-state"><p>⚠️ Erro ao carregar produtos</p><p class="error-detail">${escapeHtml(e.message)}</p><button onclick="carregarProdutos()" class="btn-primary">Tentar novamente</button></div>`;}}
+function renderizarProdutos(){const c=document.getElementById('lista-produtos');if(!produtos.length){c.innerHTML='<div class="empty-state"><p>📦 Nenhum produto cadastrado</p><button onclick="abrirFormProduto()" class="btn-primary">Adicionar primeiro produto</button></div>';return;}c.innerHTML=produtos.map(p=>{const id=produtoId(p),preco=Number(p.preco??p.price??0);return `<div class="card-produto"><div class="product-icon">🛍️</div><h3>${escapeHtml(p.nome||p.name||'Produto')}</h3>${p.categoria?`<span class="product-category">${escapeHtml(p.categoria)}</span>`:''}<div class="preco">R$ ${dinheiro(preco)}</div><div class="descricao">${escapeHtml(p.descricao||p.description||'Sem descrição')}</div><div class="actions"><button onclick="comprarProduto('${escapeHtml(id)}')" class="btn-secondary">🛒 Adicionar</button><button onclick="excluirProduto('${escapeHtml(id)}')" class="btn-danger">🗑️</button></div></div>`}).join('');}
+function abrirFormProduto(){document.getElementById('modal-body').innerHTML=`<h2>Novo Produto</h2><form onsubmit="salvarProduto(event)"><div class="form-group"><label>Nome do Produto</label><input id="produto-nome" required></div><div class="form-group"><label>Descrição</label><textarea id="produto-descricao" rows="3"></textarea></div><div class="form-group"><label>Preço (R$)</label><input type="number" id="produto-preco" step="0.01" min="0" required></div><div class="form-group"><label>Categoria</label><select id="produto-categoria"><option>Eletrônicos</option><option>Roupas</option><option>Casa</option><option>Alimentos</option><option>Outros</option></select></div><button class="btn-success" type="submit">Salvar Produto</button></form>`;document.getElementById('modal').style.display='block';}
+async function salvarProduto(e){e.preventDefault();try{await apiFetch(`${API_URL}/produtos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('produto-nome').value.trim(),descricao:document.getElementById('produto-descricao').value.trim(),preco:Number(document.getElementById('produto-preco').value),categoria:document.getElementById('produto-categoria').value})});fecharModal();await carregarProdutos();alert('✅ Produto cadastrado com sucesso!')}catch(e){alert(`❌ ${e.message}`)}}
+async function excluirProduto(id){if(!id||!confirm('Tem certeza que deseja excluir este produto?'))return;try{await apiFetch(`${API_URL}/produtos?id=${encodeURIComponent(id)}`,{method:'DELETE'});await carregarProdutos();alert('✅ Produto excluído!')}catch(e){alert(`❌ ${e.message}`)}}
+function comprarProduto(id){const p=produtos.find(x=>produtoId(x)===String(id));if(!p)return;const i=carrinho.find(x=>produtoId(x.produto)===String(id));if(i)i.quantidade++;else carrinho.push({produto:p,quantidade:1});atualizarCarrinho();mostrarToast('🛒 Produto adicionado ao carrinho');}
+function totalCarrinho(){return carrinho.reduce((s,i)=>s+Number(i.produto.preco??i.produto.price??0)*i.quantidade,0)}function quantidadeCarrinho(){return carrinho.reduce((s,i)=>s+i.quantidade,0)}function atualizarCarrinho(){const e=document.getElementById('cart-count');if(e){const q=quantidadeCarrinho();e.textContent=q;e.classList.toggle('has-items',q>0)}}
+function alterarQuantidade(id,d){const i=carrinho.find(x=>produtoId(x.produto)===String(id));if(!i)return;i.quantidade+=d;if(i.quantidade<=0)carrinho=carrinho.filter(x=>produtoId(x.produto)!==String(id));atualizarCarrinho();renderCarrinho();} function removerDoCarrinho(id){carrinho=carrinho.filter(x=>produtoId(x.produto)!==String(id));atualizarCarrinho();renderCarrinho();} function limparCarrinho(){if(!carrinho.length||!confirm('Limpar todos os itens do carrinho?'))return;carrinho=[];atualizarCarrinho();renderCarrinho();}
+function abrirCarrinho(){renderCarrinho();document.getElementById('modal').style.display='block';}
+function renderCarrinho(){const b=document.getElementById('modal-body');if(!carrinho.length){b.innerHTML='<div class="cart-empty"><div class="cart-empty-icon">🛒</div><h2>Seu carrinho está vazio</h2><p>Adicione produtos para começar seu pedido.</p><button onclick="fecharModal()" class="btn-primary">Continuar comprando</button></div>';return;}b.innerHTML=`<div class="cart-title-row"><div><h2>🛒 Meu Carrinho</h2><p>${quantidadeCarrinho()} item(ns)</p></div><button onclick="limparCarrinho()" class="btn-link danger-link">Limpar</button></div><div class="cart-items">${carrinho.map(i=>{const p=i.produto,id=produtoId(p),pr=Number(p.preco??p.price??0);return `<div class="cart-item"><div class="cart-item-info"><strong>${escapeHtml(p.nome||p.name||'Produto')}</strong><span>R$ ${dinheiro(pr)} cada</span></div><div class="quantity-control"><button onclick="alterarQuantidade('${escapeHtml(id)}',-1)">−</button><b>${i.quantidade}</b><button onclick="alterarQuantidade('${escapeHtml(id)}',1)">+</button></div><strong class="item-total">R$ ${dinheiro(pr*i.quantidade)}</strong><button class="remove-item" onclick="removerDoCarrinho('${escapeHtml(id)}')">×</button></div>`}).join('')}</div><div class="cart-summary"><div><span>Subtotal</span><strong>R$ ${dinheiro(totalCarrinho())}</strong></div><div class="cart-total"><span>Total</span><strong>R$ ${dinheiro(totalCarrinho())}</strong></div></div><button onclick="abrirCheckout()" class="btn-success">Finalizar pedido →</button>`;}
+function abrirCheckout(){if(!carrinho.length)return;const o=clientes.length?clientes.map(c=>`<option value="${escapeHtml(c.id||c._id)}">${escapeHtml(c.nome||c.name||'Cliente')} — ${escapeHtml(c.email||'')}</option>`).join(''):'<option value="">Nenhum cliente cadastrado</option>';document.getElementById('modal-body').innerHTML=`<h2>Finalizar pedido</h2><div class="checkout-total">Total: <strong>R$ ${dinheiro(totalCarrinho())}</strong></div><form onsubmit="finalizarPedido(event)"><div class="form-group"><label>Cliente</label><select id="checkout-cliente"><option value="">Pedido sem cliente</option>${o}</select></div>${!clientes.length?'<p class="checkout-note">Cadastre um cliente na aba Clientes se quiser vinculá-lo ao pedido.</p>':''}<div class="checkout-box"><span>Pagamento</span><strong>💚 Pix — modo de teste</strong><small>Nenhuma cobrança bancária real será gerada.</small></div><div class="checkout-actions"><button type="button" onclick="abrirCarrinho()" class="btn-secondary">← Voltar</button><button type="submit" class="btn-success">Confirmar pedido</button></div></form>`;}
+async function finalizarPedido(e){e.preventDefault();if(!carrinho.length)return;const clienteId=document.getElementById('checkout-cliente')?.value||null;const itens=carrinho.map(i=>{const p=i.produto,pr=Number(p.preco??p.price??0);return{produtoId:produtoId(p),nome:p.nome||p.name||'Produto',preco:pr,quantidade:i.quantidade,subtotal:pr*i.quantidade}});try{const p=await apiFetch(`${API_URL}/pedidos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clienteId,itens,total:totalCarrinho()})});const n=p?.id||p?._id||'gerado';carrinho=[];atualizarCarrinho();document.getElementById('modal-body').innerHTML=`<div class="order-success"><div class="success-icon">✓</div><h2>Pedido realizado!</h2><p>Seu pedido foi registrado com sucesso.</p><div class="order-number">Pedido #${escapeHtml(n)}</div><div class="checkout-box"><strong>⏳ Aguardando pagamento</strong><small>O Pix desta versão é apenas uma simulação.</small></div><button onclick="fecharModal();mostrarPedidos()" class="btn-success">Ver meus pedidos</button></div>`}catch(e){alert(`❌ Não foi possível criar o pedido: ${e.message}`)}}
+async function carregarClientes(){const c=document.getElementById('lista-clientes');c.innerHTML='<div class="loading">Carregando clientes...</div>';try{clientes=await apiFetch(`${API_URL}/clientes`);renderizarClientes()}catch(e){c.innerHTML=`<div class="empty-state"><p>⚠️ Erro ao carregar clientes</p><p>${escapeHtml(e.message)}</p><button onclick="carregarClientes()" class="btn-primary">Tentar novamente</button></div>`}}
+function renderizarClientes(){const c=document.getElementById('lista-clientes');if(!clientes.length){c.innerHTML='<div class="empty-state"><p>👤 Nenhum cliente cadastrado</p><button onclick="abrirFormCliente()" class="btn-primary">Cadastrar primeiro cliente</button></div>';return;}c.innerHTML=clientes.map(x=>`<div class="card-cliente"><h3>${escapeHtml(x.nome||x.name||'Cliente')}</h3><div class="email">📧 ${escapeHtml(x.email||'Sem email')}</div><div>📱 ${escapeHtml(x.telefone||'Sem telefone')}</div><div class="cpf">🆔 ${escapeHtml(x.cpf||'Sem CPF')}</div><div class="pix-key">💳 Chave Pix: ${escapeHtml(x.pixKey||'N/A')}</div></div>`).join('')}
+function abrirFormCliente(){document.getElementById('modal-body').innerHTML=`<h2>Novo Cliente</h2><form onsubmit="salvarCliente(event)"><div class="form-group"><label>Nome Completo</label><input id="cliente-nome" required></div><div class="form-group"><label>E-mail</label><input type="email" id="cliente-email" required></div><div class="form-group"><label>Telefone</label><input id="cliente-telefone"></div><div class="form-group"><label>CPF</label><input id="cliente-cpf" required maxlength="14" inputmode="numeric" placeholder="000.000.000-00"></div><button class="btn-success" type="submit">Cadastrar Cliente</button></form>`;document.getElementById('modal').style.display='block'}
+async function salvarCliente(e){e.preventDefault();try{await apiFetch(`${API_URL}/clientes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:document.getElementById('cliente-nome').value.trim(),email:document.getElementById('cliente-email').value.trim(),telefone:document.getElementById('cliente-telefone').value.trim(),cpf:document.getElementById('cliente-cpf').value.replace(/\D/g,'')})});fecharModal();await carregarClientes();alert('✅ Cliente cadastrado com sucesso!')}catch(e){alert(`❌ ${e.message}`)}}
+async function carregarPedidos(){const c=document.getElementById('lista-pedidos');c.innerHTML='<div class="loading">Carregando pedidos...</div>';try{pedidos=await apiFetch(`${API_URL}/pedidos`);renderizarPedidos()}catch(e){c.innerHTML=`<div class="empty-state"><p>⚠️ Erro ao carregar pedidos</p><p>${escapeHtml(e.message)}</p><button onclick="carregarPedidos()" class="btn-primary">Tentar novamente</button></div>`}}
+function renderizarPedidos(){const c=document.getElementById('lista-pedidos');if(!pedidos.length){c.innerHTML='<div class="empty-state"><p>📋 Nenhum pedido realizado</p><button onclick="mostrarProdutos()" class="btn-primary">Comprar produtos</button></div>';return;}c.innerHTML=pedidos.map(p=>{const it=Array.isArray(p.itens)?p.itens:[],q=it.reduce((s,i)=>s+Number(i.quantidade||1),0),st=String(p.status||'PENDING').toUpperCase(),txt=st==='PENDING'?'⏳ Aguardando pagamento':st==='PAID'?'✅ Pago':st==='CANCELLED'?'❌ Cancelado':'📦 '+st,cl=st==='PAID'?'status-paid':st==='CANCELLED'?'status-cancelled':'status-pending';return `<div class="card-pedido"><div class="order-head"><div><span class="order-label">PEDIDO</span><h3>#${escapeHtml(p.id||p._id)}</h3></div><span class="${cl}">${txt}</span></div><div class="order-meta">${q} item(ns) • ${p.createdAt?new Date(p.createdAt).toLocaleString('pt-BR'):'Data não informada'}</div><div class="order-total"><span>Total</span><strong>R$ ${dinheiro(p.total)}</strong></div>${it.length?`<details><summary>Ver itens</summary><div class="order-items">${it.map(i=>`<div>${escapeHtml(i.nome||'Produto')} × ${Number(i.quantidade||1)} <strong>R$ ${dinheiro(i.subtotal??Number(i.preco||0)*Number(i.quantidade||1))}</strong></div>`).join('')}</div></details>`:''}</div>`}).join('')}
+function fecharModal(){document.getElementById('modal').style.display='none'} function fecharModalPix(){document.getElementById('modal-pix').style.display='none'} window.onclick=e=>{if(e.target===document.getElementById('modal'))fecharModal();if(e.target===document.getElementById('modal-pix'))fecharModalPix()};
+function gerarPagamentoPix(total){const m=document.getElementById('modal-pix');document.getElementById('modal-pix-body').innerHTML=`<h2>💳 Pagamento Pix</h2><div class="qr-container"><p class="pix-value">R$ ${dinheiro(total)}</p><p>⚠️ Pix em modo de teste. Nenhuma cobrança bancária real é gerada.</p><button onclick="fecharModalPix()" class="btn-secondary">Fechar</button></div>`;m.style.display='block'} function simularPagamento(){alert('ℹ️ Simulação de pagamento disponível apenas para testes.')}
+function mostrarToast(m){const o=document.getElementById('app-toast');if(o)o.remove();const t=document.createElement('div');t.id='app-toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
